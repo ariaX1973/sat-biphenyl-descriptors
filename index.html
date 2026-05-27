@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Descripteurs d'aromaticité — SAT &amp; Biphényl (B3LYP/6-311+G(d,p))</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#FAFAF7; --surface:#FFFFFF; --text:#1A1A1A; --muted:#6B6B6B; --border:#E2E0DA;
+  --accent:#534AB7;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#14141A; --surface:#1E1E26; --text:#ECEAE3; --muted:#9A9892; --border:#2E2E38; --accent:#AFA9EC; }
+}
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; background:var(--bg); color:var(--text); }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; font-size:14px; line-height:1.5;
+       max-width:1280px; margin:0 auto; padding:1.5rem; }
+header h1 { font-size:1.4rem; font-weight:600; letter-spacing:-0.01em; margin:0 0 0.5rem; }
+.lede { color:var(--muted); font-size:0.95rem; margin:0 0 1.25rem; }
+.lede code { background:var(--border); padding:1px 4px; border-radius:3px; font-size:0.85em; }
+
+/* Tabs */
+.tabs { display:flex; gap:4px; margin-bottom:1rem; border-bottom:2px solid var(--border); }
+.tab { padding:8px 18px; border:none; background:transparent; color:var(--muted); cursor:pointer;
+       font-size:0.95rem; font-weight:500; border-bottom:2px solid transparent; margin-bottom:-2px;
+       font-family:inherit; }
+.tab:hover { color:var(--text); }
+.tab[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* Toolbar */
+.toolbar { display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1rem;
+           padding:1rem; background:var(--surface); border:1px solid var(--border); border-radius:8px; }
+.row { display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; }
+.row .label { color:var(--muted); font-size:0.72rem; margin-right:0.4rem; min-width:55px;
+              text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+.row .sep { color:var(--border); margin:0 0.2rem; user-select:none; }
+.fam-tag { color:var(--muted); font-size:0.72rem; margin-right:0.2rem; letter-spacing:0.03em; }
+.btn-desc, .btn-action, .chip {
+  border:1px solid var(--border); background:transparent; color:var(--text);
+  padding:3px 9px; border-radius:14px; cursor:pointer; font-size:0.78rem;
+  display:inline-flex; align-items:center; gap:5px; user-select:none;
+  font-family:inherit; transition: background 0.1s, border-color 0.1s;
+}
+.btn-desc:hover, .btn-action:hover, .chip:hover { background:var(--border); }
+.btn-desc[aria-pressed="true"] { color:#fff; font-weight:500; }
+.chip[aria-pressed="true"] { border-width:2px; padding:2px 8px; font-weight:500; }
+.btn-action { color:var(--muted); }
+.swatch { width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.stroke-mini { width:18px; height:0; border-top:2px solid currentColor; display:inline-block; }
+
+/* Layout */
+.grid { display:grid; grid-template-columns:1.7fr 1fr; gap:1rem; }
+@media (max-width:980px) { .grid { grid-template-columns:1fr; } }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1rem; }
+.chart-card { display:flex; flex-direction:column; }
+.chart-wrapper { position:relative; height:440px; }
+
+/* Structures row (replaces X-axis tick labels) */
+.struct-row { display:grid; gap:4px; margin-top:0.25rem; padding-left:55px; padding-right:55px; /* matches Chart.js axis padding */ }
+.struct-cell { display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px;
+               border-radius:6px; cursor:pointer; transition:background 0.1s; }
+.struct-cell:hover { background:var(--border); }
+.struct-cell[aria-selected="true"] { background:rgba(83,74,183,0.10); outline:1px solid var(--accent); }
+.struct-cell svg { width:100%; max-width:140px; height:46px; color:var(--text); }
+.struct-cell .name { font-size:0.74rem; color:var(--muted); text-align:center; font-weight:500; }
+
+/* Legend */
+.legend { margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border);
+          display:flex; flex-wrap:wrap; gap:0.8rem 1.2rem; font-size:0.76rem; color:var(--muted); }
+.legend-section { display:flex; flex-direction:column; gap:3px; }
+.legend-section .heading { color:var(--text); font-weight:600; font-size:0.68rem;
+                            text-transform:uppercase; letter-spacing:0.05em; }
+.legend-item { display:inline-flex; align-items:center; gap:5px; margin-right:0.5rem; }
+
+/* Info panel */
+.info-panel h2 { font-size:1rem; margin:0 0 0.5rem; }
+.info-panel .muted { color:var(--muted); font-size:0.85rem; }
+.info-panel .meta { font-size:0.83rem; margin:0.25rem 0 0.6rem; }
+.info-panel table { width:100%; border-collapse:collapse; font-size:0.76rem; margin-top:0.5rem;
+                    font-variant-numeric:tabular-nums; }
+.info-panel th, .info-panel td { padding:3px 5px; text-align:right; border-bottom:1px solid var(--border); }
+.info-panel th { color:var(--muted); font-weight:600; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; }
+.info-panel th:first-child, .info-panel td:first-child { text-align:left; color:var(--muted); }
+.info-panel tr.highlight td { background:rgba(83,74,183,0.10); color:var(--text); font-weight:500; }
+.info-panel h3 { font-size:0.78rem; margin:0.75rem 0 0.2rem; color:var(--muted);
+                 text-transform:uppercase; letter-spacing:0.04em; font-weight:600; }
+
+/* Page visibility */
+.page[hidden] { display:none; }
+
+footer { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); }
+.methods-note { font-size:0.78rem; color:var(--muted); margin:0; }
+.methods-note strong { color:var(--text); }
+</style>
+</head>
+<body>
+
+<!-- Reusable phenyl ring symbol -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ph" viewBox="0 0 26 24">
+    <polygon points="6.5,2 19.5,2 26,12 19.5,22 6.5,22 0,12" fill="none" stroke="currentColor" stroke-width="1.3"/>
+    <circle cx="13" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.65"/>
+  </symbol>
+</svg>
+
+<header>
+  <h1>Descripteurs d'aromaticité — SAT &amp; Biphényl</h1>
+  <p class="lede">
+    Niveau de théorie : <code>B3LYP/6-311+G(d,p)</code>. Deux pages indépendantes accessibles via les onglets ci-dessous.
+    Coche un ou plusieurs descripteurs pour les superposer. Axe Y gauche = descripteurs principaux,
+    axe Y droit = descripteurs auxiliaires ou géométriques. Clique sur une structure pour voir tous ses descripteurs.
+  </p>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Page de la figure">
+  <button class="tab" role="tab" data-page="sat"      aria-selected="true">SAT (4 molécules)</button>
+  <button class="tab" role="tab" data-page="biphenyl" aria-selected="false">Biphényl (4 systèmes)</button>
+</nav>
+
+<!-- ============================================================ -->
+<!-- PAGE: SAT                                                     -->
+<!-- ============================================================ -->
+<section class="page" id="page-sat" role="tabpanel" aria-labelledby="tab-sat">
+  <section class="toolbar" aria-label="Contrôles SAT">
+    <div class="row" id="sat-desc-row">
+      <span class="label">Descripteurs</span>
+    </div>
+    <div class="row">
+      <span class="label">Actions</span>
+      <button class="btn-action" id="sat-btn-all">Tout sélectionner</button>
+      <button class="btn-action" id="sat-btn-none">Aucun</button>
+      <button class="btn-action" id="sat-btn-aroma">HOMA seul</button>
+    </div>
+  </section>
+  <section class="grid">
+    <div class="card chart-card">
+      <div class="chart-wrapper">
+        <canvas id="chart-sat" aria-label="Valeurs des descripteurs d'aromaticité pour les 4 molécules SAT."></canvas>
+      </div>
+      <div class="struct-row" id="struct-sat" role="tablist" aria-label="Sélecteur de molécule SAT"></div>
+      <div class="legend" id="legend-sat"></div>
+    </div>
+    <aside class="card info-panel" id="info-sat">
+      <h2>Détails</h2>
+      <p class="muted">Coche un ou plusieurs descripteurs ci-dessus, puis clique sur une structure de molécule pour voir tous ses descripteurs en valeurs brutes.</p>
+    </aside>
+  </section>
+</section>
+
+<!-- ============================================================ -->
+<!-- PAGE: Biphenyl                                                -->
+<!-- ============================================================ -->
+<section class="page" id="page-biphenyl" role="tabpanel" aria-labelledby="tab-biphenyl" hidden>
+  <section class="toolbar" aria-label="Contrôles Biphényl">
+    <div class="row" id="bip-desc-row">
+      <span class="label">Descripteurs</span>
+    </div>
+    <div class="row" id="bip-ring-row">
+      <span class="label">Cycles</span>
+    </div>
+    <div class="row">
+      <span class="label">Actions</span>
+      <button class="btn-action" id="bip-btn-all">Tout sélectionner</button>
+      <button class="btn-action" id="bip-btn-none">Aucun</button>
+      <button class="btn-action" id="bip-btn-aroma">HOMA seul</button>
+    </div>
+  </section>
+  <section class="grid">
+    <div class="card chart-card">
+      <div class="chart-wrapper">
+        <canvas id="chart-bip" aria-label="Valeurs des descripteurs d'aromaticité pour les 4 systèmes biphényliques."></canvas>
+      </div>
+      <div class="struct-row" id="struct-bip" role="tablist" aria-label="Sélecteur de système biphényl"></div>
+      <div class="legend" id="legend-bip"></div>
+    </div>
+    <aside class="card info-panel" id="info-bip">
+      <h2>Détails</h2>
+      <p class="muted">Pour le push-pull, les deux cycles ne sont pas équivalents (cycle 1 = côté NO₂ accepteur, cycle 2 = côté NH₂ donneur). Trait plein = Ring 1, trait tireté = Ring 2.</p>
+    </aside>
+  </section>
+</section>
+
+<footer>
+  <p class="methods-note">
+    <strong>Methods.</strong> B3LYP/6-311+G(d,p) optimisations (sauf scans contraints).
+    <em>SAT0/1/2</em> = série 1,2-diphényl-X avec X = éthyl (sp³–sp³), éthényl (cis &amp; trans, sp²–sp²), éthynyl (sp–sp).
+    Distance C(phényl)–C(linker) donnée colonne d(C–C).
+    <em>Biphényl push-pull</em> = 4-nitro-4'-aminobiphényl, optimisé puis re-calculé à C–C inter-cycle contraint à 1.65 et 1.85 Å.
+    Cycle 1 = phényle côté NO₂, cycle 2 = phényle côté NH₂.
+    HOMA: Krygowski R<sub>opt</sub>=1.3913 Å. LDM &amp; Q family: Pilmé &amp; Spezia (2026). S-hom: indice d'homogénéité électronique.
+    Suffixe <em>(G)</em> = grandeur globale, <em>TOT</em> = total des deux cycles.
+  </p>
+</footer>
+
+<script>
+(() => {
+'use strict';
+
+// ============================================================
+// 1) PALETTE
+// ============================================================
+const mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+const c = (o) => o[mode];
+
+const descColor = {
+  // HOMA family — bleus
+  HOMA:        { light:'#185FA5', dark:'#85B7EB' },
+  HOMA_TOT:    { light:'#0D3A6B', dark:'#5994CC' },
+  EN:          { light:'#4E8BC4', dark:'#A8C9E8' },
+  GEO:         { light:'#74A4D2', dark:'#C0D7EE' },
+  // LDM family — verts
+  LDM_Frob:    { light:'#0F6E56', dark:'#5DCAA5' },
+  LDM_OffDiag: { light:'#2E9374', dark:'#7FD9BA' },
+  LDM_Diag:    { light:'#5DCAA5', dark:'#9FEACA' },
+  LDM_CT:      { light:'#7A6E3D', dark:'#D0C58E' },
+  // Q family — orange
+  Q_Frob:      { light:'#993C1D', dark:'#F0997B' },
+  Q_G:         { light:'#D85A30', dark:'#FAB495' },
+  // S family — violet
+  S_hom:       { light:'#534AB7', dark:'#AFA9EC' },
+  S_hom_G:     { light:'#7C72D2', dark:'#C5C0F1' },
+  S_G:         { light:'#A29AE0', dark:'#DAD6F6' },
+  // Geometry — ambre/rose
+  d_CC:        { light:'#BA7517', dark:'#FAC775' },
+  dihedral:    { light:'#993556', dark:'#ED93B1' },
+};
+
+// ============================================================
+// 2) DESCRIPTORS METADATA
+//    axis: 'L' (Y-left, main) | 'R' (Y-right, aux/special)
+//    family: section in the toolbar
+//    page: 'both' | 'sat' | 'biphenyl'
+//    perRing: true if value differs per ring (Biphenyl push-pull only)
+// ============================================================
+const DESCRIPTORS = [
+  { key:'HOMA',        label:'HOMA',          axis:'L', family:'HOMA',  page:'both',     perRing:true  },
+  { key:'HOMA_TOT',    label:'HOMA TOT',      axis:'L', family:'HOMA',  page:'biphenyl', perRing:false },
+  { key:'EN',          label:'EN',            axis:'R', family:'HOMA',  page:'both',     perRing:true  },
+  { key:'GEO',         label:'GEO',           axis:'R', family:'HOMA',  page:'both',     perRing:true  },
+  { key:'LDM_OffDiag', label:'LDM Off Diag',  axis:'L', family:'LDM',   page:'both',     perRing:true  },
+  { key:'LDM_Diag',    label:'LDM Diag',      axis:'L', family:'LDM',   page:'both',     perRing:true  },
+  { key:'LDM_Frob',    label:'LDM Frob Full', axis:'L', family:'LDM',   page:'both',     perRing:true  },
+  { key:'LDM_CT',      label:'LDM CT %',      axis:'R', family:'LDM',   page:'both',     perRing:true  },
+  { key:'Q_Frob',      label:'Q Frob',        axis:'L', family:'Q',     page:'both',     perRing:true  },
+  { key:'Q_G',         label:'Q (G)',         axis:'R', family:'Q',     page:'both',     perRing:false },
+  { key:'S_hom',       label:'S-hom',         axis:'L', family:'S',     page:'both',     perRing:true  },
+  { key:'S_hom_G',     label:'S-hom (G)',     axis:'R', family:'S',     page:'both',     perRing:false },
+  { key:'S_G',         label:'S (G)',         axis:'R', family:'S',     page:'both',     perRing:false },
+  { key:'d_CC',        label:'d(C–C) (Å)',    axis:'R', family:'Géom.', page:'sat',      perRing:false },
+  { key:'dihedral',    label:'Angle dièdre (°)', axis:'R', family:'Géom.', page:'biphenyl', perRing:false },
+];
+const FAMILY_ORDER = ['HOMA', 'LDM', 'Q', 'S', 'Géom.'];
+
+// ============================================================
+// 3) DATA — SAT (per molecule, single value per descriptor)
+// ============================================================
+const SAT_MOLS = ['SAT0', 'SAT1 – cis', 'SAT1 – trans', 'SAT2'];
+const SAT_DATA = {
+  HOMA:        [0.997, 0.992, 0.989, 0.990],
+  EN:          [0.002, 0.004, 0.004, 0.004],
+  GEO:         [0.001, 0.005, 0.007, 0.006],
+  LDM_OffDiag: [0.497, 0.493, 0.494, 0.491],
+  LDM_Diag:    [1.307, 1.315, 1.318, 1.365],
+  LDM_Frob:    [1.398, 1.404, 1.408, 1.451],
+  LDM_CT:      [-8.836, -9.063, -9.142, -9.417],
+  Q_Frob:      [0.293, 0.287, 0.287, 0.285],
+  Q_G:         [0.080, 0.084, 0.084, 0.089],
+  S_hom:       [0.443, 0.437, 0.434, 0.433],
+  S_hom_G:     [0.160, 0.169, 0.171, 0.165],
+  S_G:         [0.180, 0.189, 0.189, 0.195],
+  d_CC:        [1.512, 1.475, 1.467, 1.428],
+};
+
+// ============================================================
+// 4) DATA — Biphényl
+//    Per-ring descriptors stored as { r1:[...], r2:[...] }
+//    Global descriptors stored as [...]
+// ============================================================
+const BIP_MOLS = ['Biphényl', 'pushpull (opt)', 'pushpull (1.65 Å)', 'pushpull (1.85 Å)'];
+const BIP_DATA = {
+  // Per-ring (Ring 1 = side NO2, Ring 2 = side NH2). Biphényl pur: rings équivalents → mêmes valeurs.
+  HOMA:        { r1:[0.994, 0.984, 0.984, 0.984], r2:[0.994, 0.987, 0.987, 0.987] },
+  EN:          { r1:[0.003, 0.006, 0.006, 0.006], r2:[0.003, 0.002, 0.002, 0.002] },
+  GEO:         { r1:[0.003, 0.010, 0.010, 0.010], r2:[0.003, 0.011, 0.011, 0.011] },
+  LDM_OffDiag: { r1:[0.494, 0.476, 0.481, 0.484], r2:[0.494, 0.478, 0.482, 0.485] },
+  LDM_Diag:    { r1:[1.316, 1.526, 1.510, 1.499], r2:[1.316, 1.432, 1.422, 1.411] },
+  LDM_Frob:    { r1:[1.406, 1.599, 1.585, 1.575], r2:[1.406, 1.509, 1.502, 1.492] },
+  LDM_CT:      { r1:[-8.988, -10.809, -10.539, -10.333], r2:[-8.988, -10.237, -10.005, -9.798] },
+  Q_Frob:      { r1:[0.290, 0.266, 0.273, 0.277], r2:[0.290, 0.269, 0.275, 0.280] },
+  S_hom:       { r1:[0.439, 0.418, 0.423, 0.426], r2:[0.439, 0.422, 0.427, 0.430] },
+  // Global
+  HOMA_TOT:    [0.994, 0.985, 0.985, 0.985],
+  Q_G:         [0.100, 0.073, 0.073, 0.072],
+  S_hom_G:     [0.206, 0.137, 0.137, 0.137],
+  S_G:         [0.224, 0.164, 0.163, 0.164],
+  dihedral:    [41.0, 35.2, null, null],   // null = non communiqué / contraint
+};
+
+// ============================================================
+// 5) STRUCTURE SVGs (inline, ~140x46 each)
+// ============================================================
+function svgSat0() {
+  return `<svg viewBox="0 0 160 48" stroke="currentColor" fill="none" stroke-width="1.1" stroke-linecap="round">
+    <use href="#ph" x="0" y="12"/>
+    <line x1="26" y1="24" x2="50" y2="24"/>
+    <text x="38" y="20" font-size="8" fill="currentColor" text-anchor="middle" stroke="none">CH₂</text>
+    <line x1="50" y1="24" x2="76" y2="24"/>
+    <line x1="76" y1="24" x2="100" y2="24"/>
+    <text x="88" y="20" font-size="8" fill="currentColor" text-anchor="middle" stroke="none">CH₂</text>
+    <line x1="100" y1="24" x2="124" y2="24"/>
+    <use href="#ph" x="124" y="12"/>
+  </svg>`;
+}
+function svgSat1Cis() {
+  return `<svg viewBox="0 0 160 48" stroke="currentColor" fill="none" stroke-width="1.1" stroke-linecap="round">
+    <use href="#ph" x="0" y="2"/>
+    <line x1="26" y1="14" x2="55" y2="32"/>
+    <line x1="55" y1="32" x2="75" y2="32"/>
+    <line x1="55" y1="35" x2="75" y2="35"/>
+    <line x1="75" y1="32" x2="104" y2="14"/>
+    <text x="65" y="46" font-size="7" fill="currentColor" text-anchor="middle" stroke="none">cis</text>
+    <use href="#ph" x="104" y="2"/>
+  </svg>`;
+}
+function svgSat1Trans() {
+  return `<svg viewBox="0 0 160 48" stroke="currentColor" fill="none" stroke-width="1.1" stroke-linecap="round">
+    <use href="#ph" x="0" y="22"/>
+    <line x1="26" y1="34" x2="55" y2="14"/>
+    <line x1="55" y1="14" x2="75" y2="14"/>
+    <line x1="55" y1="17" x2="75" y2="17"/>
+    <line x1="75" y1="14" x2="104" y2="34"/>
+    <text x="65" y="9" font-size="7" fill="currentColor" text-anchor="middle" stroke="none">trans</text>
+    <use href="#ph" x="104" y="22"/>
+  </svg>`;
+}
+function svgSat2() {
+  return `<svg viewBox="0 0 160 48" stroke="currentColor" fill="none" stroke-width="1.1" stroke-linecap="round">
+    <use href="#ph" x="0" y="12"/>
+    <line x1="26" y1="22" x2="124" y2="22"/>
+    <line x1="26" y1="24.5" x2="124" y2="24.5"/>
+    <line x1="26" y1="27" x2="124" y2="27"/>
+    <text x="75" y="42" font-size="7" fill="currentColor" text-anchor="middle" stroke="none">C≡C</text>
+    <use href="#ph" x="124" y="12"/>
+  </svg>`;
+}
+function svgBiphenyl(label) {
+  return `<svg viewBox="0 0 160 48" stroke="currentColor" fill="none" stroke-width="1.1" stroke-linecap="round">
+    <use href="#ph" x="40" y="12"/>
+    <line x1="66" y1="24" x2="94" y2="24"/>
+    <use href="#ph" x="94" y="12"/>
+    ${label ? `<text x="80" y="44" font-size="7" fill="currentColor" text-anchor="middle" stroke="none">${label}</text>` : ''}
+  </svg>`;
+}
+function svgPushpull(label) {
+  return `<svg viewBox="0 0 200 48" stroke="currentColor" fill="none" stroke-width="1.1" stroke-linecap="round">
+    <text x="2" y="28" font-size="9" fill="currentColor" stroke="none" font-weight="500">O₂N</text>
+    <line x1="22" y1="24" x2="38" y2="24"/>
+    <use href="#ph" x="38" y="12"/>
+    <line x1="64" y1="24" x2="96" y2="24"/>
+    <use href="#ph" x="96" y="12"/>
+    <line x1="122" y1="24" x2="138" y2="24"/>
+    <text x="158" y="28" font-size="9" fill="currentColor" stroke="none" font-weight="500" text-anchor="middle">NH₂</text>
+    ${label ? `<text x="100" y="44" font-size="7" fill="currentColor" text-anchor="middle" stroke="none">${label}</text>` : ''}
+  </svg>`;
+}
+
+const SAT_STRUCT  = [ svgSat0(),    svgSat1Cis(),       svgSat1Trans(),      svgSat2()           ];
+const BIP_STRUCT  = [ svgBiphenyl('φ ≈ 41°'), svgPushpull('opt, φ ≈ 35°'),
+                      svgPushpull('d = 1.65 Å'),         svgPushpull('d = 1.85 Å')              ];
+
+// ============================================================
+// 6) STATE
+// ============================================================
+const state = {
+  current: 'sat',
+  sat: {
+    descriptors: new Set(['HOMA']),
+    selected: null,    // mol index
+  },
+  biphenyl: {
+    descriptors: new Set(['HOMA']),
+    rings: new Set(['r1', 'r2']),
+    selected: null,
+  },
+};
+
+// ============================================================
+// 7) UI: build descriptor toolbar
+// ============================================================
+function buildDescRow(pageKey, rowEl) {
+  const st = state[pageKey];
+  const eligible = DESCRIPTORS.filter(d => d.page === 'both' || d.page === pageKey);
+
+  FAMILY_ORDER.forEach((fam, fi) => {
+    const inFam = eligible.filter(d => d.family === fam);
+    if (!inFam.length) return;
+    if (fi > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'sep'; sep.textContent = '|';
+      rowEl.appendChild(sep);
+    }
+    const tag = document.createElement('span');
+    tag.className = 'fam-tag';
+    tag.textContent = fam + ':';
+    rowEl.appendChild(tag);
+
+    inFam.forEach(d => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-desc';
+      btn.dataset.key = d.key;
+      btn.setAttribute('aria-pressed', st.descriptors.has(d.key));
+      btn.innerHTML = `<span class="swatch" style="background:${c(descColor[d.key])}"></span>${d.label}`;
+      btn.style.borderColor = c(descColor[d.key]);
+      if (st.descriptors.has(d.key)) {
+        btn.style.background = c(descColor[d.key]);
+        btn.style.color = '#fff';
+      }
+      btn.addEventListener('click', () => {
+        if (st.descriptors.has(d.key)) st.descriptors.delete(d.key);
+        else st.descriptors.add(d.key);
+        updateDescBtnStyles(rowEl, pageKey);
+        render(pageKey);
+      });
+      rowEl.appendChild(btn);
+    });
+  });
+}
+
+function updateDescBtnStyles(rowEl, pageKey) {
+  const st = state[pageKey];
+  rowEl.querySelectorAll('.btn-desc').forEach(btn => {
+    const k = btn.dataset.key;
+    const on = st.descriptors.has(k);
+    btn.setAttribute('aria-pressed', on);
+    btn.style.background = on ? c(descColor[k]) : 'transparent';
+    btn.style.color = on ? '#fff' : 'var(--text)';
+  });
+}
+
+function buildRingRow(rowEl) {
+  const st = state.biphenyl;
+  [['r1', 'Ring 1 (côté NO₂)', '— '],
+   ['r2', 'Ring 2 (côté NH₂)', '-- ']].forEach(([k, lbl]) => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.setAttribute('aria-pressed', st.rings.has(k));
+    btn.dataset.ring = k;
+    btn.innerHTML = `<span class="stroke-mini" style="color:var(--muted);border-top-style:${k==='r1'?'solid':'dashed'}"></span>${lbl}`;
+    btn.addEventListener('click', () => {
+      if (st.rings.has(k)) {
+        if (st.rings.size > 1) st.rings.delete(k);
+      } else st.rings.add(k);
+      btn.setAttribute('aria-pressed', st.rings.has(k));
+      render('biphenyl');
+    });
+    rowEl.appendChild(btn);
+  });
+}
+
+function buildStructRow(pageKey, rowEl, structs, names) {
+  rowEl.style.gridTemplateColumns = `repeat(${structs.length}, 1fr)`;
+  structs.forEach((svg, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'struct-cell';
+    cell.setAttribute('aria-selected', 'false');
+    cell.dataset.idx = i;
+    cell.innerHTML = svg + `<span class="name">${names[i]}</span>`;
+    cell.addEventListener('click', () => {
+      const st = state[pageKey];
+      st.selected = st.selected === i ? null : i;
+      rowEl.querySelectorAll('.struct-cell').forEach(c =>
+        c.setAttribute('aria-selected', String(Number(c.dataset.idx) === st.selected)));
+      updateInfoPanel(pageKey);
+    });
+    rowEl.appendChild(cell);
+  });
+}
+
+// ============================================================
+// 8) CHARTS
+// ============================================================
+const charts = {};
+
+function initChart(pageKey, canvasId, labels) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[pageKey] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 200 },
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      layout: { padding: { left: 8, right: 8, top: 8, bottom: 8 } },
+      scales: {
+        x: { type: 'category',
+             ticks: { display: false },               // hide labels — structures row replaces them
+             grid: { color: 'rgba(127,127,127,0.10)' } },
+        y:  { position: 'left',  display: false,
+              title: { display: true, text: '' },
+              grid: { color: 'rgba(127,127,127,0.12)' } },
+        y1: { position: 'right', display: false,
+              title: { display: true, text: '' },
+              grid: { drawOnChartArea: false } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ctx.dataset._tooltip ? ctx.dataset._tooltip(ctx) : `${ctx.parsed.y}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+// ============================================================
+// 9) RENDER
+// ============================================================
+function render(pageKey) {
+  const ch = charts[pageKey];
+  const st = state[pageKey];
+  const datasets = [];
+
+  const activeL = [];  // keys on Y-left
+  const activeR = [];  // keys on Y-right
+
+  st.descriptors.forEach(k => {
+    const d = DESCRIPTORS.find(x => x.key === k);
+    if (!d) return;
+    if (pageKey === 'sat') {
+      const vals = SAT_DATA[k];
+      if (!vals) return;
+      pushDataset(datasets, d, vals, null);
+    } else {
+      if (d.perRing) {
+        if (state.biphenyl.rings.has('r1')) pushDataset(datasets, d, BIP_DATA[k].r1, 'r1');
+        if (state.biphenyl.rings.has('r2')) pushDataset(datasets, d, BIP_DATA[k].r2, 'r2');
+      } else {
+        pushDataset(datasets, d, BIP_DATA[k], null);
+      }
+    }
+    (d.axis === 'L' ? activeL : activeR).push(d);
+  });
+
+  // Configure axes
+  const yL = ch.options.scales.y, yR = ch.options.scales.y1;
+  yL.display = activeL.length > 0;
+  yR.display = activeR.length > 0;
+  yL.title.text = activeL.length === 1 ? activeL[0].label : 'Descripteurs principaux';
+  yR.title.text = activeR.length === 1 ? activeR[0].label
+                : activeR.length === 0 ? ''
+                : 'Descripteurs auxiliaires / géométriques';
+
+  ch.data.datasets = datasets;
+  ch.update();
+  buildLegend(pageKey);
+}
+
+function pushDataset(datasets, d, vals, ringTag) {
+  const color = c(descColor[d.key]);
+  const dash  = (ringTag === 'r2') ? [5, 4] : [];
+  const ringLbl = ringTag === 'r1' ? ' · R1' : ringTag === 'r2' ? ' · R2' : '';
+  datasets.push({
+    label: d.label + ringLbl,
+    data: vals.map(v => v === null ? NaN : v),
+    borderColor: color,
+    backgroundColor: color,
+    borderDash: dash,
+    borderWidth: 2,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+    pointStyle: 'circle',
+    spanGaps: false,
+    tension: 0,
+    yAxisID: d.axis === 'L' ? 'y' : 'y1',
+    _meta: { key: d.key, ring: ringTag },
+    _tooltip: (ctx) => {
+      const v = ctx.parsed.y;
+      const lbl = d.label + (ringTag ? ` (${ringTag === 'r1' ? 'Ring 1' : 'Ring 2'})` : '');
+      return `${lbl}: ${Number.isFinite(v) ? v.toFixed(3) : '—'}`;
+    },
+  });
+}
+
+// ============================================================
+// 10) LEGEND
+// ============================================================
+function buildLegend(pageKey) {
+  const root = document.getElementById('legend-' + (pageKey === 'sat' ? 'sat' : 'bip'));
+  root.innerHTML = '';
+  const st = state[pageKey];
+
+  // Group active descriptors by axis
+  const byAxis = { L: [], R: [] };
+  st.descriptors.forEach(k => {
+    const d = DESCRIPTORS.find(x => x.key === k);
+    if (d) byAxis[d.axis].push(d);
+  });
+
+  ['L', 'R'].forEach(ax => {
+    if (!byAxis[ax].length) return;
+    const sec = document.createElement('div');
+    sec.className = 'legend-section';
+    sec.innerHTML = `<span class="heading">${ax === 'L' ? 'Y-left (principal)' : 'Y-right (auxiliaire)'}</span>`;
+    byAxis[ax].forEach(d => {
+      const it = document.createElement('span');
+      it.className = 'legend-item';
+      it.style.color = c(descColor[d.key]);
+      it.innerHTML = `<span class="stroke-mini"></span><span style="color:var(--text)">${d.label}</span>`;
+      sec.appendChild(it);
+    });
+    root.appendChild(sec);
+  });
+
+  if (pageKey === 'biphenyl' && st.descriptors.size > 0) {
+    const sec = document.createElement('div');
+    sec.className = 'legend-section';
+    sec.innerHTML = `<span class="heading">Cycles</span>
+      <span class="legend-item"><span class="stroke-mini" style="color:var(--text)"></span>Ring 1 (NO₂)</span>
+      <span class="legend-item"><span class="stroke-mini" style="color:var(--text);border-top-style:dashed"></span>Ring 2 (NH₂)</span>`;
+    root.appendChild(sec);
+  }
+}
+
+// ============================================================
+// 11) INFO PANEL (click on a structure)
+// ============================================================
+function updateInfoPanel(pageKey) {
+  const panel = document.getElementById('info-' + (pageKey === 'sat' ? 'sat' : 'bip'));
+  const st = state[pageKey];
+  if (st.selected === null) {
+    panel.innerHTML = pageKey === 'sat'
+      ? `<h2>Détails</h2><p class="muted">Coche un ou plusieurs descripteurs ci-dessus, puis clique sur une structure de molécule pour voir tous ses descripteurs en valeurs brutes.</p>`
+      : `<h2>Détails</h2><p class="muted">Pour le push-pull, les deux cycles ne sont pas équivalents (cycle 1 = côté NO₂ accepteur, cycle 2 = côté NH₂ donneur). Trait plein = Ring 1, trait tireté = Ring 2.</p>`;
+    return;
+  }
+
+  const i = st.selected;
+  const name = (pageKey === 'sat' ? SAT_MOLS : BIP_MOLS)[i];
+  const active = st.descriptors;
+
+  let html = `<h2>${name}</h2>`;
+  const eligible = DESCRIPTORS.filter(d => d.page === 'both' || d.page === pageKey);
+
+  if (pageKey === 'sat') {
+    html += `<table><thead><tr><th>Descriptor</th><th>Value</th></tr></thead><tbody>`;
+    eligible.forEach(d => {
+      const v = SAT_DATA[d.key]?.[i];
+      const hl = active.has(d.key) ? ' class="highlight"' : '';
+      html += `<tr${hl}><td>${d.label}</td><td>${fmt(v)}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  } else {
+    // Biphenyl: split per-ring vs global
+    html += `<h3>Per-cycle</h3>
+      <table><thead><tr><th>Descriptor</th><th>Ring 1</th><th>Ring 2</th></tr></thead><tbody>`;
+    eligible.filter(d => d.perRing).forEach(d => {
+      const v1 = BIP_DATA[d.key]?.r1?.[i];
+      const v2 = BIP_DATA[d.key]?.r2?.[i];
+      const hl = active.has(d.key) ? ' class="highlight"' : '';
+      html += `<tr${hl}><td>${d.label}</td><td>${fmt(v1)}</td><td>${fmt(v2)}</td></tr>`;
+    });
+    html += `</tbody></table>
+      <h3>Global</h3>
+      <table><thead><tr><th>Descriptor</th><th>Value</th></tr></thead><tbody>`;
+    eligible.filter(d => !d.perRing).forEach(d => {
+      const v = BIP_DATA[d.key]?.[i];
+      const hl = active.has(d.key) ? ' class="highlight"' : '';
+      html += `<tr${hl}><td>${d.label}</td><td>${fmt(v)}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  panel.innerHTML = html;
+}
+function fmt(v) {
+  if (v === null || v === undefined || !Number.isFinite(v)) return '—';
+  return Math.abs(v) >= 100 ? v.toFixed(1) : v.toFixed(3);
+}
+
+// ============================================================
+// 12) TABS
+// ============================================================
+function switchTab(pageKey) {
+  state.current = pageKey;
+  document.querySelectorAll('.tab').forEach(t =>
+    t.setAttribute('aria-selected', t.dataset.page === pageKey));
+  document.getElementById('page-sat').hidden       = pageKey !== 'sat';
+  document.getElementById('page-biphenyl').hidden  = pageKey !== 'biphenyl';
+  // Chart resize after un-hide
+  if (charts[pageKey]) charts[pageKey].resize();
+}
+
+// ============================================================
+// 13) BOOT
+// ============================================================
+
+// Build SAT page
+buildDescRow('sat', document.getElementById('sat-desc-row'));
+buildStructRow('sat', document.getElementById('struct-sat'), SAT_STRUCT, SAT_MOLS);
+initChart('sat', 'chart-sat', SAT_MOLS);
+render('sat');
+
+// Build Biphenyl page
+buildDescRow('biphenyl', document.getElementById('bip-desc-row'));
+buildRingRow(document.getElementById('bip-ring-row'));
+buildStructRow('biphenyl', document.getElementById('struct-bip'), BIP_STRUCT, BIP_MOLS);
+initChart('biphenyl', 'chart-bip', BIP_MOLS);
+render('biphenyl');
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t =>
+  t.addEventListener('click', () => switchTab(t.dataset.page)));
+
+// Action buttons
+function bindActions(pageKey, allId, noneId, aromaId, rowId) {
+  const st = state[pageKey];
+  const row = document.getElementById(rowId);
+  const eligible = DESCRIPTORS.filter(d => d.page === 'both' || d.page === pageKey);
+  document.getElementById(allId).addEventListener('click', () => {
+    eligible.forEach(d => st.descriptors.add(d.key));
+    updateDescBtnStyles(row, pageKey); render(pageKey);
+  });
+  document.getElementById(noneId).addEventListener('click', () => {
+    st.descriptors.clear();
+    updateDescBtnStyles(row, pageKey); render(pageKey);
+  });
+  document.getElementById(aromaId).addEventListener('click', () => {
+    st.descriptors.clear(); st.descriptors.add('HOMA');
+    updateDescBtnStyles(row, pageKey); render(pageKey);
+  });
+}
+bindActions('sat',      'sat-btn-all', 'sat-btn-none', 'sat-btn-aroma', 'sat-desc-row');
+bindActions('biphenyl', 'bip-btn-all', 'bip-btn-none', 'bip-btn-aroma', 'bip-desc-row');
+
+})();
+</script>
+</body>
+</html>
