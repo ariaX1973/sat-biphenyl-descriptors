@@ -801,7 +801,7 @@ async function downloadDiagramFor(pageKey) {
   const ch = charts[pageKey];
   if (!ch) return;
   const DPR = Math.max(1, window.devicePixelRatio || 1);
-  const F_TITLE = Math.round(32 * DPR);
+  const F_TITLE = 30;
   const F_SUB   = Math.round(13 * DPR);
   const margin = Math.round(28 * DPR);
   const lineGap = Math.round(8 * DPR);
