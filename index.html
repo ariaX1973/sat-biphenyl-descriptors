@@ -132,6 +132,7 @@ footer { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border)
       <button class="btn-action" id="sat-btn-all">Tout sélectionner</button>
       <button class="btn-action" id="sat-btn-none">Aucun</button>
       <button class="btn-action" id="sat-btn-aroma">HOMA seul</button>
+      <button class="chip" id="sat-btn-download" title="Télécharger le diagramme courant en PNG">⬇ Télécharger PNG</button>
     </div>
   </section>
   <section class="grid">
@@ -165,6 +166,7 @@ footer { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border)
       <button class="btn-action" id="bip-btn-all">Tout sélectionner</button>
       <button class="btn-action" id="bip-btn-none">Aucun</button>
       <button class="btn-action" id="bip-btn-aroma">HOMA seul</button>
+      <button class="chip" id="bip-btn-download" title="Télécharger le diagramme courant en PNG">⬇ Télécharger PNG</button>
     </div>
   </section>
   <section class="grid">
@@ -593,6 +595,13 @@ function buildLegend(pageKey) {
   root.innerHTML = '';
   const st = state[pageKey];
 
+  // Method (niveau de théorie) — toujours affiché en tête
+  const methSec = document.createElement('div');
+  methSec.className = 'legend-section';
+  methSec.innerHTML = `<span class="heading">Méthode</span>
+    <span class="legend-item"><span style="color:var(--text)">B3LYP/6-311+G(d,p)</span></span>`;
+  root.appendChild(methSec);
+
   // Group active descriptors by axis
   const byAxis = { L: [], R: [] };
   st.descriptors.forEach(k => {
@@ -734,6 +743,60 @@ function bindActions(pageKey, allId, noneId, aromaId, rowId) {
 }
 bindActions('sat',      'sat-btn-all', 'sat-btn-none', 'sat-btn-aroma', 'sat-desc-row');
 bindActions('biphenyl', 'bip-btn-all', 'bip-btn-none', 'bip-btn-aroma', 'bip-desc-row');
+
+// ============================================================
+// 13) DOWNLOAD PNG (titre + méthode + état actif compositionnés)
+// ============================================================
+const EXPORT_METHOD = "B3LYP/6-311+G(d,p) (Gaussian 16)";
+const EXPORT_TITLES = {
+  sat:      "Descripteurs d'aromaticité — Série SAT (Ph–CH₂CH₂–Ph, stilbène, diphénylacétylène)",
+  biphenyl: "Descripteurs d'aromaticité — Biphényle & push-pull 4-NO₂-4'-NH₂",
+};
+
+function buildExportStateLabel(pageKey) {
+  const st = state[pageKey];
+  const active = [...st.descriptors].map(k => DESCRIPTORS.find(x => x.key === k)?.label || k);
+  if (!active.length) return 'Aucun descripteur sélectionné';
+  if (pageKey === 'biphenyl') {
+    const rings = [...st.rings].sort().map(r => r === 'r1' ? 'Ring 1 (NO₂)' : 'Ring 2 (NH₂)').join(' + ');
+    return `Descripteurs : ${active.join(', ')}  ·  ${rings}`;
+  }
+  return `Descripteurs : ${active.join(', ')}`;
+}
+
+function downloadDiagramFor(pageKey) {
+  const ch = charts[pageKey];
+  if (!ch) return;
+  const dataUrl = ch.toBase64Image('image/png', 1);
+  const img = new Image();
+  img.onload = () => {
+    const margin = 24;
+    const titleH = 80;
+    const out = document.createElement('canvas');
+    out.width  = img.naturalWidth  + margin * 2;
+    out.height = img.naturalHeight + margin * 2 + titleH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#1A1A1A';
+    ctx.font = 'bold 18px -apple-system, "Segoe UI", Arial, sans-serif';
+    ctx.fillText(EXPORT_TITLES[pageKey], margin, margin);
+    ctx.font = '13px -apple-system, "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#6B6B6B';
+    ctx.fillText('Method : ' + EXPORT_METHOD, margin, margin + 26);
+    ctx.fillText('Config : ' + buildExportStateLabel(pageKey), margin, margin + 46);
+    ctx.drawImage(img, margin, margin + titleH);
+    const slug = 'sat-biphenyl-descriptors_' + pageKey + '_' + new Date().toISOString().slice(0, 10);
+    const link = document.createElement('a');
+    link.download = slug + '.png';
+    link.href = out.toDataURL('image/png');
+    link.click();
+  };
+  img.src = dataUrl;
+}
+document.getElementById('sat-btn-download').addEventListener('click', () => downloadDiagramFor('sat'));
+document.getElementById('bip-btn-download').addEventListener('click', () => downloadDiagramFor('biphenyl'));
 
 })();
 </script>
