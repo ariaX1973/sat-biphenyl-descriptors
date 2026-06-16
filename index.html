@@ -90,6 +90,40 @@ header h1 { font-size:1.4rem; font-weight:600; letter-spacing:-0.01em; margin:0 
 /* Page visibility */
 .page[hidden] { display:none; }
 
+/* Compare panel + Grid panel (multi-descriptor views) */
+.compare-panel,.grid-panel { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+                              padding:1rem; margin-top:1rem; }
+.compare-panel summary,.grid-panel summary { cursor:pointer; font-weight:600; font-size:0.95rem; list-style:none;
+                                              display:flex; align-items:center; gap:0.5rem; }
+.compare-panel summary::before,.grid-panel summary::before { content:'▾'; display:inline-block; transition:transform 0.15s; color:var(--accent); }
+.compare-panel:not([open]) summary::before,.grid-panel:not([open]) summary::before { transform:rotate(-90deg); }
+.compare-controls { display:flex; flex-direction:column; gap:0.5rem; margin-top:0.75rem; }
+.compare-row { display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; }
+.compare-row .label { color:var(--muted); font-size:0.75rem; min-width:80px;
+                      text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+.compare-chip { border:1px solid var(--border); background:transparent; color:var(--text);
+                padding:3px 9px; border-radius:14px; cursor:pointer; font-size:0.78rem;
+                display:inline-flex; align-items:center; gap:5px; user-select:none; font-family:inherit; }
+.compare-chip:hover { background:var(--border); }
+.compare-chip[aria-pressed="true"] { border-width:2px; padding:2px 8px; font-weight:500; }
+.compare-canvas-wrap { position:relative; height:360px; margin-top:0.75rem; }
+.compare-actions { display:flex; gap:0.4rem; margin-top:0.5rem; flex-wrap:wrap; }
+.compare-legend { font-size:0.76rem; color:var(--muted); margin-top:0.5rem;
+                  display:flex; flex-wrap:wrap; gap:0.5rem 0.9rem; }
+.compare-legend-item { display:inline-flex; align-items:center; gap:5px; }
+.compare-legend-stroke { width:22px; height:0; border-top:2.5px solid currentColor; display:inline-block; }
+.grid-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+              gap:0.75rem; margin-top:0.75rem; }
+.grid-card { background:var(--bg); border:1px solid var(--border); border-radius:6px;
+             padding:0.5rem 0.5rem 0.25rem; }
+.grid-card-title { font-size:0.78rem; font-weight:600; color:var(--text);
+                   padding:0 0.25rem 0.25rem; display:flex; justify-content:space-between; align-items:baseline; }
+.grid-card-family { font-size:0.7rem; color:var(--muted); font-weight:400;
+                    text-transform:uppercase; letter-spacing:0.04em; }
+.grid-card-canvas-wrap { position:relative; height:175px; }
+.grid-empty { color:var(--muted); font-size:0.85rem; padding:1rem; text-align:center;
+              border:1px dashed var(--border); border-radius:6px; }
+
 footer { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); }
 .methods-note { font-size:0.78rem; color:var(--muted); margin:0; }
 .methods-note strong { color:var(--text); }
@@ -148,6 +182,39 @@ footer { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border)
       <p class="muted">Coche un ou plusieurs descripteurs ci-dessus, puis clique sur une structure de molécule pour voir tous ses descripteurs en valeurs brutes.</p>
     </aside>
   </section>
+
+  <details class="compare-panel" id="compare-panel-sat" open>
+    <summary>Panel comparatif SAT — superpose plusieurs descripteurs sur un seul graphe</summary>
+    <div class="compare-controls">
+      <div class="compare-row" id="cmp-sat-desc-row"><span class="label">Descripteurs</span></div>
+      <div class="compare-row">
+        <span class="label">Options</span>
+        <button class="compare-chip" id="cmp-sat-normalize" aria-pressed="true">Normaliser [0,1]</button>
+        <button class="compare-chip" id="cmp-sat-clear">Tout désélectionner</button>
+      </div>
+    </div>
+    <div class="compare-canvas-wrap"><canvas id="cmp-sat-chart"></canvas></div>
+    <div class="compare-legend" id="cmp-sat-legend"></div>
+    <div class="compare-actions">
+      <button class="compare-chip" id="cmp-sat-download" style="border-color:var(--accent);color:var(--accent);font-weight:600">⬇ Télécharger ce panel en PNG</button>
+    </div>
+  </details>
+
+  <details class="grid-panel" id="grid-panel-sat" open>
+    <summary>Panels par descripteur SAT — chaque descripteur dans son propre mini-graphe</summary>
+    <div class="compare-controls">
+      <div class="compare-row" id="grid-sat-desc-row"><span class="label">Descripteurs</span></div>
+      <div class="compare-row">
+        <span class="label">Actions</span>
+        <button class="compare-chip" id="grid-sat-preset">Preset HOMA/EN/GEO</button>
+        <button class="compare-chip" id="grid-sat-clear">Tout désélectionner</button>
+      </div>
+    </div>
+    <div class="grid-cards" id="grid-sat-cards"><p class="grid-empty">Coche des descripteurs ci-dessus.</p></div>
+    <div class="compare-actions">
+      <button class="compare-chip" id="grid-sat-download" style="border-color:var(--accent);color:var(--accent);font-weight:600">⬇ Télécharger le grid panel en PNG</button>
+    </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
@@ -182,6 +249,41 @@ footer { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border)
       <p class="muted">Pour le push-pull, les deux cycles ne sont pas équivalents (cycle 1 = côté NO₂ accepteur, cycle 2 = côté NH₂ donneur). Trait plein = Ring 1, trait tireté = Ring 2.</p>
     </aside>
   </section>
+
+  <details class="compare-panel" id="compare-panel-bip" open>
+    <summary>Panel comparatif Biphényl — superpose plusieurs descripteurs sur un seul graphe</summary>
+    <div class="compare-controls">
+      <div class="compare-row" id="cmp-bip-rings-row"><span class="label">Rings</span></div>
+      <div class="compare-row" id="cmp-bip-desc-row"><span class="label">Descripteurs</span></div>
+      <div class="compare-row">
+        <span class="label">Options</span>
+        <button class="compare-chip" id="cmp-bip-normalize" aria-pressed="true">Normaliser [0,1]</button>
+        <button class="compare-chip" id="cmp-bip-clear">Tout désélectionner</button>
+      </div>
+    </div>
+    <div class="compare-canvas-wrap"><canvas id="cmp-bip-chart"></canvas></div>
+    <div class="compare-legend" id="cmp-bip-legend"></div>
+    <div class="compare-actions">
+      <button class="compare-chip" id="cmp-bip-download" style="border-color:var(--accent);color:var(--accent);font-weight:600">⬇ Télécharger ce panel en PNG</button>
+    </div>
+  </details>
+
+  <details class="grid-panel" id="grid-panel-bip" open>
+    <summary>Panels par descripteur Biphényl — chaque descripteur dans son propre mini-graphe</summary>
+    <div class="compare-controls">
+      <div class="compare-row" id="grid-bip-rings-row"><span class="label">Rings</span></div>
+      <div class="compare-row" id="grid-bip-desc-row"><span class="label">Descripteurs</span></div>
+      <div class="compare-row">
+        <span class="label">Actions</span>
+        <button class="compare-chip" id="grid-bip-preset">Preset HOMA/HOMA TOT/Q(G)</button>
+        <button class="compare-chip" id="grid-bip-clear">Tout désélectionner</button>
+      </div>
+    </div>
+    <div class="grid-cards" id="grid-bip-cards"><p class="grid-empty">Coche des descripteurs ci-dessus.</p></div>
+    <div class="compare-actions">
+      <button class="compare-chip" id="grid-bip-download" style="border-color:var(--accent);color:var(--accent);font-weight:600">⬇ Télécharger le grid panel en PNG</button>
+    </div>
+  </details>
 </section>
 
 <footer>
@@ -850,6 +952,453 @@ async function downloadDiagramFor(pageKey) {
 }
 document.getElementById('sat-btn-download').addEventListener('click', () => downloadDiagramFor('sat'));
 document.getElementById('bip-btn-download').addEventListener('click', () => downloadDiagramFor('biphenyl'));
+
+// ============================================================
+// COMPARE + GRID PANELS — per-tab
+// ============================================================
+const cmpPalette = ['#185FA5','#BA7517','#993556','#0F6E56','#534AB7','#993C1D','#D85A30',
+                    '#5DCAA5','#AFA9EC','#F0997B','#85B7EB','#FAC775','#ED93B1','#7C5C2E'];
+const cmpColor = (i) => cmpPalette[i % cmpPalette.length];
+
+const panelState = {
+  sat: {
+    cmp:  { descriptors: new Set(['HOMA']), normalize: true },
+    grid: { descriptors: new Set(['HOMA','LDM_Frob']) },
+  },
+  biphenyl: {
+    cmp:  { rings: new Set(['r1','r2']), descriptors: new Set(['HOMA']), normalize: true },
+    grid: { rings: new Set(['r1','r2']), descriptors: new Set(['HOMA','HOMA_TOT']) },
+  },
+};
+const cmpCharts = {};   // 'sat' or 'biphenyl' → Chart
+const gridCharts = {};  // 'sat-DESCKEY' or 'biphenyl-DESCKEY' → Chart
+
+// Descriptor list filtered for a given page
+function pageDescriptors(pageKey) {
+  return DESCRIPTORS.filter(d => d.page === 'both' || d.page === pageKey);
+}
+
+// Get values for (page, descriptor, ringSet) — returns array of length N_MOLS, with null for missing
+function panelValuesAt(pageKey, descKey, ringSet) {
+  const d = DESCRIPTORS.find(x => x.key === descKey);
+  if (!d) return [];
+  if (pageKey === 'sat') {
+    return SAT_DATA[descKey] || [];
+  } else {
+    if (d.perRing) {
+      const ringData = BIP_DATA[descKey];
+      if (!ringData) return [];
+      const activeRings = ['r1','r2'].filter(r => ringSet.has(r));
+      if (!activeRings.length) return [];
+      const N = ringData.r1.length;
+      const out = [];
+      for (let i = 0; i < N; i++) {
+        const vals = activeRings.map(r => ringData[r][i]).filter(v => Number.isFinite(v));
+        out.push(vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null);
+      }
+      return out;
+    } else {
+      return BIP_DATA[descKey] || [];
+    }
+  }
+}
+
+function buildPanelDescriptorRow(rowEl, pageKey, ps, onChange, dataAttr) {
+  const descs = pageDescriptors(pageKey);
+  let lastFam = null;
+  descs.forEach(d => {
+    if (d.family !== lastFam) {
+      if (lastFam !== null) {
+        const sep = document.createElement('span');
+        sep.style.cssText = 'color:var(--border);margin:0 0.2rem;user-select:none';
+        sep.textContent = '|';
+        rowEl.appendChild(sep);
+      }
+      const tag = document.createElement('span');
+      tag.style.cssText = 'color:var(--muted);font-size:0.72rem;margin-right:0.2rem';
+      tag.textContent = d.family + ':';
+      rowEl.appendChild(tag);
+      lastFam = d.family;
+    }
+    const btn = document.createElement('button');
+    btn.className = 'compare-chip';
+    btn.setAttribute(dataAttr, d.key);
+    btn.setAttribute('aria-pressed', ps.descriptors.has(d.key));
+    btn.textContent = d.label;
+    btn.addEventListener('click', () => {
+      if (ps.descriptors.has(d.key)) ps.descriptors.delete(d.key);
+      else ps.descriptors.add(d.key);
+      btn.setAttribute('aria-pressed', ps.descriptors.has(d.key));
+      onChange();
+    });
+    rowEl.appendChild(btn);
+  });
+}
+
+// ===== Compare panel =====
+function cmpInitPage(pageKey) {
+  const mols = pageKey === 'sat' ? SAT_MOLS : BIP_MOLS;
+  const cssId = pageKey === 'sat' ? 'cmp-sat-chart' : 'cmp-bip-chart';
+  const ctx = document.getElementById(cssId).getContext('2d');
+  cmpCharts[pageKey] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: mols, datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 150 },
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      scales: {
+        x: { type: 'category', title: { display: true, text: 'Molécule' },
+             grid: { color: 'rgba(127,127,127,0.10)' } },
+        y: { title: { display: true, text: 'Valeur normalisée [0, 1]' },
+             grid: { color: 'rgba(127,127,127,0.12)' } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.dataset._tooltip ? ctx.dataset._tooltip(ctx) : ctx.parsed.y.toFixed(3) } },
+      },
+    },
+  });
+}
+
+function cmpRender(pageKey) {
+  const ch = cmpCharts[pageKey];
+  if (!ch) return;
+  const ps = panelState[pageKey].cmp;
+  const mols = pageKey === 'sat' ? SAT_MOLS : BIP_MOLS;
+  const ringSet = pageKey === 'biphenyl' ? ps.rings : null;
+
+  const series = [];
+  [...ps.descriptors].forEach((descKey, idx) => {
+    const d = DESCRIPTORS.find(x => x.key === descKey);
+    if (!d) return;
+    const raw = panelValuesAt(pageKey, descKey, ringSet);
+    series.push({ key: descKey, label: d.label, family: d.family, raw, color: cmpColor(idx) });
+  });
+
+  const datasets = [];
+  if (!series.length) {
+    ch.data.datasets = datasets; ch.update();
+    cmpBuildLegend(pageKey, []);
+    return;
+  }
+
+  let plotted;
+  if (ps.normalize) {
+    plotted = series.map(s => {
+      const finite = s.raw.filter(v => Number.isFinite(v));
+      const lo = Math.min(...finite), hi = Math.max(...finite);
+      const range = hi - lo || 1;
+      return { ...s, norm: s.raw.map(v => Number.isFinite(v) ? (v - lo) / range : null), range: [lo, hi] };
+    });
+  } else {
+    plotted = series.map(s => ({ ...s, norm: s.raw, range: null }));
+  }
+  plotted.forEach(s => {
+    datasets.push({
+      label: s.label,
+      data: s.norm,
+      borderColor: s.color, backgroundColor: s.color,
+      borderWidth: 2, pointRadius: 5, pointHoverRadius: 7,
+      tension: 0, spanGaps: true,
+      _tooltip: (ctx) => {
+        const i = ctx.dataIndex;
+        const rawVal = s.raw[i];
+        const rawStr = Number.isFinite(rawVal) ? rawVal.toFixed(3) : '—';
+        if (ps.normalize && s.range) {
+          return `${s.label} @ ${mols[i]} = ${rawStr}  (norm: ${(ctx.parsed.y*100).toFixed(0)}%, [${s.range[0].toFixed(2)}, ${s.range[1].toFixed(2)}])`;
+        }
+        return `${s.label} @ ${mols[i]} = ${rawStr}`;
+      },
+    });
+  });
+
+  ch.options.scales.y.title.text = ps.normalize ? 'Valeur normalisée [0, 1]' : 'Valeur brute';
+  if (ps.normalize) { ch.options.scales.y.min = -0.05; ch.options.scales.y.max = 1.05; }
+  else { delete ch.options.scales.y.min; delete ch.options.scales.y.max; }
+  ch.data.datasets = datasets;
+  ch.update();
+  cmpBuildLegend(pageKey, plotted);
+}
+
+function cmpBuildLegend(pageKey, series) {
+  const id = pageKey === 'sat' ? 'cmp-sat-legend' : 'cmp-bip-legend';
+  const root = document.getElementById(id);
+  root.innerHTML = '';
+  series.forEach(s => {
+    const it = document.createElement('span');
+    it.className = 'compare-legend-item';
+    it.style.color = s.color;
+    const r = s.range ? ` <small style="color:var(--muted)">[${s.range[0].toFixed(2)}, ${s.range[1].toFixed(2)}]</small>` : '';
+    it.innerHTML = `<span class="compare-legend-stroke"></span><span style="color:var(--text)">${s.label}${r}</span>`;
+    root.appendChild(it);
+  });
+  if (pageKey === 'biphenyl') {
+    const ps = panelState.biphenyl.cmp;
+    const it = document.createElement('span');
+    it.className = 'compare-legend-item';
+    it.style.color = 'var(--muted)';
+    it.innerHTML = `<span style="color:var(--text)">Rings actifs : ${[...ps.rings].sort().join(' + ')}  (perRing → moyenne)</span>`;
+    root.appendChild(it);
+  }
+  if (!series.length) {
+    root.innerHTML = '<span style="color:var(--muted)">Aucun descripteur sélectionné.</span>';
+  }
+}
+
+async function cmpDownload(pageKey) {
+  const ch = cmpCharts[pageKey];
+  if (!ch) return;
+  const DPR = Math.max(1, window.devicePixelRatio || 1);
+  const F_TITLE = 30, F_SUB = Math.round(13 * DPR);
+  const margin = Math.round(24 * DPR), lineGap = Math.round(7 * DPR);
+  const titleH = F_TITLE + F_SUB * 2 + lineGap * 3 + Math.round(8 * DPR);
+  const legendGap = Math.round(10 * DPR);
+
+  const chartImg = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = ch.toBase64Image('image/png', 1); });
+  const legId = pageKey === 'sat' ? 'cmp-sat-legend' : 'cmp-bip-legend';
+  const legendData = await captureHtmlAsImage(document.getElementById(legId), chartImg.naturalWidth, DPR);
+  const legendH = legendData ? legendData.height : 0;
+  const out = document.createElement('canvas');
+  out.width = chartImg.naturalWidth + margin * 2;
+  out.height = chartImg.naturalHeight + margin * 2 + titleH + (legendH ? legendH + legendGap : 0);
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, out.width, out.height); ctx.textBaseline = 'top';
+  let y = margin;
+  ctx.fillStyle = '#1A1A1A'; ctx.font = 'bold ' + F_TITLE + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+  const titleTxt = pageKey === 'sat' ? 'Série SAT — Compare panel' : 'Biphényl & push-pull — Compare panel';
+  ctx.fillText(titleTxt, margin, y); y += F_TITLE + lineGap;
+  ctx.font = F_SUB + 'px -apple-system, "Segoe UI", Arial, sans-serif'; ctx.fillStyle = '#6B6B6B';
+  ctx.fillText('Method : B3LYP/6-311+G(d,p) (Gaussian 16)', margin, y); y += F_SUB + lineGap;
+  const ps = panelState[pageKey].cmp;
+  const descLbl = [...ps.descriptors].map(k => DESCRIPTORS.find(d => d.key === k)?.label || k).join(', ');
+  const ringPart = pageKey === 'biphenyl' ? `  ·  rings ${[...ps.rings].sort().join('+')}` : '';
+  ctx.fillText(`Config : ${descLbl || '—'}${ringPart}  ·  ${ps.normalize ? 'norm [0,1]' : 'brut'}`, margin, y);
+  ctx.drawImage(chartImg, margin, margin + titleH);
+  if (legendData) ctx.drawImage(legendData.img, margin, margin + titleH + chartImg.naturalHeight + legendGap);
+  const link = document.createElement('a');
+  link.download = `sat-biphenyl-descriptors_${pageKey}_compare_${new Date().toISOString().slice(0,10)}.png`;
+  link.href = out.toDataURL('image/png');
+  link.click();
+}
+
+// ===== Grid panel =====
+function gridRender(pageKey) {
+  const root = document.getElementById(pageKey === 'sat' ? 'grid-sat-cards' : 'grid-bip-cards');
+  // Destroy existing charts for this page
+  Object.keys(gridCharts).filter(k => k.startsWith(pageKey + '-')).forEach(k => {
+    try { gridCharts[k].destroy(); } catch(_) {}
+    delete gridCharts[k];
+  });
+  root.innerHTML = '';
+  const ps = panelState[pageKey].grid;
+  const activeKeys = [...ps.descriptors];
+  if (!activeKeys.length) {
+    root.innerHTML = '<p class="grid-empty">Coche des descripteurs ci-dessus.</p>';
+    return;
+  }
+  const mols = pageKey === 'sat' ? SAT_MOLS : BIP_MOLS;
+  const ringSet = pageKey === 'biphenyl' ? ps.rings : null;
+  activeKeys.forEach((descKey, idx) => {
+    const d = DESCRIPTORS.find(x => x.key === descKey);
+    if (!d) return;
+    const card = document.createElement('div');
+    card.className = 'grid-card';
+    const titleColor = cmpColor(idx);
+    const famSuffix = pageKey === 'biphenyl' && d.perRing ? ' · per-ring (avg)' : ' · ' + (d.perRing ? 'per-mol' : 'global');
+    const canvasId = `grid-chart-${pageKey}-${idx}`;
+    card.innerHTML = `
+      <div class="grid-card-title">
+        <span style="color:${titleColor}">${d.label}</span>
+        <span class="grid-card-family">${d.family}${famSuffix}</span>
+      </div>
+      <div class="grid-card-canvas-wrap"><canvas id="${canvasId}"></canvas></div>`;
+    root.appendChild(card);
+    const raw = panelValuesAt(pageKey, descKey, ringSet);
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    gridCharts[pageKey + '-' + descKey] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: mols,
+        datasets: [{
+          label: d.label,
+          data: raw,
+          borderColor: titleColor, backgroundColor: titleColor,
+          borderWidth: 2, pointRadius: 4, pointHoverRadius: 6,
+          tension: 0, spanGaps: true,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 100 },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        layout: { padding: { top: 4, right: 6, bottom: 0, left: 4 } },
+        scales: {
+          x: { type: 'category', ticks: { font: { size: 9 }, maxRotation: 30, minRotation: 0 },
+               title: { display: false }, grid: { color: 'rgba(127,127,127,0.10)', drawTicks: false } },
+          y: { ticks: { font: { size: 10 } },
+               title: { display: true, text: d.label, font: { size: 10 }, padding: { top: 0, bottom: 2 } },
+               grid: { color: 'rgba(127,127,127,0.10)' } },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: (c2) => {
+              const v = c2.parsed.y;
+              const lbl = mols[c2.dataIndex];
+              return `${lbl} : ${Number.isFinite(v) ? v.toFixed(3) : '—'}`;
+            },
+          } },
+        },
+      },
+    });
+  });
+}
+
+async function gridDownload(pageKey) {
+  const ps = panelState[pageKey].grid;
+  if (!ps.descriptors.size) return;
+  const DPR = Math.max(1, window.devicePixelRatio || 1);
+  const F_TITLE = 30, F_SUB = Math.round(13 * DPR), F_CARD_TITLE = Math.round(14 * DPR);
+  const margin = Math.round(24 * DPR), lineGap = Math.round(7 * DPR);
+  const titleH = F_TITLE + F_SUB * 2 + lineGap * 3 + Math.round(10 * DPR);
+  const cardGap = Math.round(12 * DPR), cardTitleH = F_CARD_TITLE + Math.round(10 * DPR);
+
+  const cards = []; let idx = 0;
+  for (const descKey of ps.descriptors) {
+    const ch = gridCharts[pageKey + '-' + descKey];
+    if (!ch) { idx++; continue; }
+    const d = DESCRIPTORS.find(x => x.key === descKey);
+    const img = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = ch.toBase64Image('image/png', 1); });
+    const famSuffix = pageKey === 'biphenyl' && d.perRing ? ' · per-ring (avg)' : ' · ' + (d.perRing ? 'per-mol' : 'global');
+    cards.push({ descKey, label: d.label, family: d.family + famSuffix, img, color: cmpColor(idx) });
+    idx++;
+  }
+  if (!cards.length) return;
+
+  const COLS = 2, cardW = cards[0].img.naturalWidth, cardH = cards[0].img.naturalHeight + cardTitleH;
+  const rows = Math.ceil(cards.length / COLS);
+  const gridW = COLS * cardW + (COLS - 1) * cardGap, gridH = rows * cardH + (rows - 1) * cardGap;
+  const out = document.createElement('canvas');
+  out.width = gridW + margin * 2; out.height = gridH + margin * 2 + titleH;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, out.width, out.height); ctx.textBaseline = 'top';
+  let y = margin;
+  ctx.fillStyle = '#1A1A1A'; ctx.font = 'bold ' + F_TITLE + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+  const titleTxt = pageKey === 'sat' ? 'Série SAT — Grid panel' : 'Biphényl & push-pull — Grid panel';
+  ctx.fillText(titleTxt, margin, y); y += F_TITLE + lineGap;
+  ctx.font = F_SUB + 'px -apple-system, "Segoe UI", Arial, sans-serif'; ctx.fillStyle = '#6B6B6B';
+  ctx.fillText('Method : B3LYP/6-311+G(d,p) (Gaussian 16)', margin, y); y += F_SUB + lineGap;
+  const ringPart = pageKey === 'biphenyl' ? `rings ${[...ps.rings].sort().join('+')}  ·  ` : '';
+  ctx.fillText(`Config : ${ringPart}${cards.length} mini-graphes`, margin, y);
+  const baseY = margin + titleH;
+  cards.forEach((card, i) => {
+    const col = i % COLS, row = Math.floor(i / COLS);
+    const cx = margin + col * (cardW + cardGap), cy = baseY + row * (cardH + cardGap);
+    ctx.fillStyle = '#FAFAF7'; ctx.fillRect(cx, cy, cardW, cardH);
+    ctx.strokeStyle = '#E2E0DA'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cardW, cardH);
+    ctx.fillStyle = card.color;
+    ctx.font = 'bold ' + F_CARD_TITLE + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+    ctx.fillText(card.label, cx + 8, cy + 6);
+    ctx.fillStyle = '#9A9A9A';
+    ctx.font = Math.round(11 * DPR) + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+    const famW = ctx.measureText(card.family).width;
+    ctx.fillText(card.family, cx + cardW - famW - 8, cy + 8);
+    ctx.drawImage(card.img, cx, cy + cardTitleH);
+  });
+  const link = document.createElement('a');
+  link.download = `sat-biphenyl-descriptors_${pageKey}_grid_${new Date().toISOString().slice(0,10)}.png`;
+  link.href = out.toDataURL('image/png');
+  link.click();
+}
+
+// Build SAT panel controls
+buildPanelDescriptorRow(document.getElementById('cmp-sat-desc-row'), 'sat', panelState.sat.cmp, () => cmpRender('sat'), 'data-cmp-sat-desc');
+buildPanelDescriptorRow(document.getElementById('grid-sat-desc-row'), 'sat', panelState.sat.grid, () => gridRender('sat'), 'data-grid-sat-desc');
+document.getElementById('cmp-sat-normalize').addEventListener('click', (e) => {
+  panelState.sat.cmp.normalize = !panelState.sat.cmp.normalize;
+  e.currentTarget.setAttribute('aria-pressed', panelState.sat.cmp.normalize);
+  cmpRender('sat');
+});
+document.getElementById('cmp-sat-clear').addEventListener('click', () => {
+  panelState.sat.cmp.descriptors.clear();
+  document.querySelectorAll('[data-cmp-sat-desc]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  cmpRender('sat');
+});
+document.getElementById('cmp-sat-download').addEventListener('click', () => cmpDownload('sat'));
+document.getElementById('grid-sat-preset').addEventListener('click', () => {
+  panelState.sat.grid.descriptors = new Set(['HOMA','EN','GEO']);
+  document.querySelectorAll('[data-grid-sat-desc]').forEach(b => b.setAttribute('aria-pressed', panelState.sat.grid.descriptors.has(b.getAttribute('data-grid-sat-desc'))));
+  gridRender('sat');
+});
+document.getElementById('grid-sat-clear').addEventListener('click', () => {
+  panelState.sat.grid.descriptors.clear();
+  document.querySelectorAll('[data-grid-sat-desc]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  gridRender('sat');
+});
+document.getElementById('grid-sat-download').addEventListener('click', () => gridDownload('sat'));
+
+// Build Biphényl panel controls
+const cmpBipRings = document.getElementById('cmp-bip-rings-row');
+['r1','r2'].forEach(r => {
+  const btn = document.createElement('button');
+  btn.className = 'compare-chip';
+  btn.dataset.cmpBipRing = r;
+  btn.setAttribute('aria-pressed', panelState.biphenyl.cmp.rings.has(r));
+  btn.textContent = r === 'r1' ? 'Ring 1 (NO₂)' : 'Ring 2 (NH₂)';
+  btn.addEventListener('click', () => {
+    if (panelState.biphenyl.cmp.rings.has(r)) { if (panelState.biphenyl.cmp.rings.size > 1) panelState.biphenyl.cmp.rings.delete(r); }
+    else panelState.biphenyl.cmp.rings.add(r);
+    btn.setAttribute('aria-pressed', panelState.biphenyl.cmp.rings.has(r));
+    cmpRender('biphenyl');
+  });
+  cmpBipRings.appendChild(btn);
+});
+const gridBipRings = document.getElementById('grid-bip-rings-row');
+['r1','r2'].forEach(r => {
+  const btn = document.createElement('button');
+  btn.className = 'compare-chip';
+  btn.dataset.gridBipRing = r;
+  btn.setAttribute('aria-pressed', panelState.biphenyl.grid.rings.has(r));
+  btn.textContent = r === 'r1' ? 'Ring 1 (NO₂)' : 'Ring 2 (NH₂)';
+  btn.addEventListener('click', () => {
+    if (panelState.biphenyl.grid.rings.has(r)) { if (panelState.biphenyl.grid.rings.size > 1) panelState.biphenyl.grid.rings.delete(r); }
+    else panelState.biphenyl.grid.rings.add(r);
+    btn.setAttribute('aria-pressed', panelState.biphenyl.grid.rings.has(r));
+    gridRender('biphenyl');
+  });
+  gridBipRings.appendChild(btn);
+});
+buildPanelDescriptorRow(document.getElementById('cmp-bip-desc-row'), 'biphenyl', panelState.biphenyl.cmp, () => cmpRender('biphenyl'), 'data-cmp-bip-desc');
+buildPanelDescriptorRow(document.getElementById('grid-bip-desc-row'), 'biphenyl', panelState.biphenyl.grid, () => gridRender('biphenyl'), 'data-grid-bip-desc');
+document.getElementById('cmp-bip-normalize').addEventListener('click', (e) => {
+  panelState.biphenyl.cmp.normalize = !panelState.biphenyl.cmp.normalize;
+  e.currentTarget.setAttribute('aria-pressed', panelState.biphenyl.cmp.normalize);
+  cmpRender('biphenyl');
+});
+document.getElementById('cmp-bip-clear').addEventListener('click', () => {
+  panelState.biphenyl.cmp.descriptors.clear();
+  document.querySelectorAll('[data-cmp-bip-desc]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  cmpRender('biphenyl');
+});
+document.getElementById('cmp-bip-download').addEventListener('click', () => cmpDownload('biphenyl'));
+document.getElementById('grid-bip-preset').addEventListener('click', () => {
+  panelState.biphenyl.grid.descriptors = new Set(['HOMA','HOMA_TOT','Q_G']);
+  document.querySelectorAll('[data-grid-bip-desc]').forEach(b => b.setAttribute('aria-pressed', panelState.biphenyl.grid.descriptors.has(b.getAttribute('data-grid-bip-desc'))));
+  gridRender('biphenyl');
+});
+document.getElementById('grid-bip-clear').addEventListener('click', () => {
+  panelState.biphenyl.grid.descriptors.clear();
+  document.querySelectorAll('[data-grid-bip-desc]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  gridRender('biphenyl');
+});
+document.getElementById('grid-bip-download').addEventListener('click', () => gridDownload('biphenyl'));
+
+// Initialise and render both pages' panels
+cmpInitPage('sat');
+cmpInitPage('biphenyl');
+cmpRender('sat');
+cmpRender('biphenyl');
+gridRender('sat');
+gridRender('biphenyl');
 
 })();
 </script>
