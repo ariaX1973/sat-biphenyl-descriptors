@@ -5,6 +5,84 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Descripteurs d'aromaticité — SAT &amp; Biphényl (B3LYP/6-311+G(d,p))</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function applyAcsStyleC(){
+  if (!window.Chart) return;
+  const F = 'Helvetica, Arial, sans-serif';
+  Chart.defaults.font.family = F;
+  Chart.defaults.color = '#000000';
+  Chart.defaults.elements.line.borderWidth = 1.6;
+  Chart.defaults.elements.point.borderWidth = 1.2;
+  Chart.register({
+    id: 'acsScalePatch',
+    beforeUpdate(chart){
+      for (const sid in chart.scales){
+        const s = chart.scales[sid]; const o = s.options || {};
+        if (s.id === 'yPES') continue;
+        if (!o.grid) o.grid = {};
+        o.grid.color = 'rgba(0,0,0,0)';
+        if (typeof o.grid.tickLength !== 'number' || o.grid.tickLength > -3) o.grid.tickLength = -4;
+        o.grid.drawTicks = true;
+        if (!o.border) o.border = {};
+        o.border.color = '#000000'; o.border.width = 0.8; o.border.dash = [];
+        if (!o.ticks) o.ticks = {};
+        o.ticks.color = '#000000';
+        if (!o.ticks.font) o.ticks.font = {};
+        o.ticks.font.family = F;
+        if (!o.title) o.title = {};
+        o.title.color = '#000000';
+        if (!o.title.font) o.title.font = {};
+        o.title.font.family = F;
+      }
+    }
+  });
+  Chart.register({
+    id: 'acsFrame',
+    afterDraw(chart){
+      const pl = chart.config.options.plugins || {};
+      if (pl.acsFrame === false) return;
+      const ca = chart.chartArea; if (!ca) return;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle='#000000'; ctx.lineWidth=0.8;
+      ctx.strokeRect(ca.left + 0.5, ca.top + 0.5, ca.right - ca.left - 1, ca.bottom - ca.top - 1);
+      ctx.restore();
+    }
+  });
+  Chart.register({
+    id: 'acsMinorTicks',
+    afterDraw(chart){
+      const pl = chart.config.options.plugins || {};
+      if (pl.acsMinorTicks === false) return;
+      const ca = chart.chartArea; if (!ca) return;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle='#000000'; ctx.lineWidth=0.5;
+      for (const axis of ['x','y']){
+        const s = chart.scales[axis]; if (!s) continue;
+        const ticks = s.ticks; if (!ticks || ticks.length < 2) continue;
+        for (let i=0; i<ticks.length-1; i++){
+          const v0 = ticks[i].value, v1 = ticks[i+1].value;
+          const step = (v1 - v0) / 4;
+          for (let k=1; k<=3; k++){
+            const v = v0 + step*k;
+            const p = s.getPixelForValue(v);
+            if (!Number.isFinite(p)) continue;
+            if (axis === 'x'){
+              ctx.beginPath(); ctx.moveTo(p, ca.bottom); ctx.lineTo(p, ca.bottom - 2.5); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(p, ca.top);    ctx.lineTo(p, ca.top + 2.5);    ctx.stroke();
+            } else {
+              ctx.beginPath(); ctx.moveTo(ca.left,  p); ctx.lineTo(ca.left + 2.5,  p); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(ca.right, p); ctx.lineTo(ca.right - 2.5, p); ctx.stroke();
+            }
+          }
+        }
+      }
+      ctx.restore();
+    }
+  });
+})();
+</script>
 <style>
 :root {
   --bg:#FAFAF7; --surface:#FFFFFF; --text:#1A1A1A; --muted:#6B6B6B; --border:#E2E0DA;
@@ -931,10 +1009,10 @@ async function downloadDiagramFor(pageKey) {
   ctx.textBaseline = 'top';
   let y = margin;
   ctx.fillStyle = '#1A1A1A';
-  ctx.font = 'bold ' + F_TITLE + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+  ctx.font = 'bold ' + F_TITLE + 'px Helvetica, Arial, sans-serif';
   ctx.fillText(EXPORT_TITLES[pageKey], margin, y);
   y += F_TITLE + lineGap;
-  ctx.font = F_SUB + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+  ctx.font = F_SUB + 'px Helvetica, Arial, sans-serif';
   ctx.fillStyle = '#6B6B6B';
   ctx.fillText('Method : ' + EXPORT_METHOD, margin, y);
   y += F_SUB + lineGap;
@@ -1165,10 +1243,10 @@ async function cmpDownload(pageKey) {
   const ctx = out.getContext('2d');
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, out.width, out.height); ctx.textBaseline = 'top';
   let y = margin;
-  ctx.fillStyle = '#1A1A1A'; ctx.font = 'bold ' + F_TITLE + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+  ctx.fillStyle = '#1A1A1A'; ctx.font = 'bold ' + F_TITLE + 'px Helvetica, Arial, sans-serif';
   const titleTxt = pageKey === 'sat' ? 'Série SAT — Compare panel' : 'Biphényl & push-pull — Compare panel';
   ctx.fillText(titleTxt, margin, y); y += F_TITLE + lineGap;
-  ctx.font = F_SUB + 'px -apple-system, "Segoe UI", Arial, sans-serif'; ctx.fillStyle = '#6B6B6B';
+  ctx.font = F_SUB + 'px Helvetica, Arial, sans-serif'; ctx.fillStyle = '#6B6B6B';
   ctx.fillText('Method : B3LYP/6-311+G(d,p) (Gaussian 16)', margin, y); y += F_SUB + lineGap;
   const ps = panelState[pageKey].cmp;
   const descLbl = [...ps.descriptors].map(k => DESCRIPTORS.find(d => d.key === k)?.label || k).join(', ');
@@ -1313,10 +1391,10 @@ async function gridDownload(pageKey) {
   const ctx = out.getContext('2d');
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, out.width, out.height); ctx.textBaseline = 'top';
   let y = margin;
-  ctx.fillStyle = '#1A1A1A'; ctx.font = 'bold ' + F_TITLE + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+  ctx.fillStyle = '#1A1A1A'; ctx.font = 'bold ' + F_TITLE + 'px Helvetica, Arial, sans-serif';
   const titleTxt = pageKey === 'sat' ? 'Série SAT — Grid panel' : 'Biphényl & push-pull — Grid panel';
   ctx.fillText(titleTxt, margin, y); y += F_TITLE + lineGap;
-  ctx.font = F_SUB + 'px -apple-system, "Segoe UI", Arial, sans-serif'; ctx.fillStyle = '#6B6B6B';
+  ctx.font = F_SUB + 'px Helvetica, Arial, sans-serif'; ctx.fillStyle = '#6B6B6B';
   ctx.fillText('Method : B3LYP/6-311+G(d,p) (Gaussian 16)', margin, y); y += F_SUB + lineGap;
   const ringPart = pageKey === 'biphenyl' ? `rings ${[...ps.rings].sort().join('+')}  ·  ` : '';
   ctx.fillText(`Config : ${ringPart}${cards.length} mini-graphes`, margin, y);
@@ -1327,10 +1405,10 @@ async function gridDownload(pageKey) {
     ctx.fillStyle = '#FAFAF7'; ctx.fillRect(cx, cy, cardW, cardH);
     ctx.strokeStyle = '#E2E0DA'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cardW, cardH);
     ctx.fillStyle = card.color;
-    ctx.font = 'bold ' + F_CARD_TITLE + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+    ctx.font = 'bold ' + F_CARD_TITLE + 'px Helvetica, Arial, sans-serif';
     ctx.fillText(card.label, cx + 8, cy + 6);
     ctx.fillStyle = '#9A9A9A';
-    ctx.font = Math.round(11 * DPR) + 'px -apple-system, "Segoe UI", Arial, sans-serif';
+    ctx.font = Math.round(11 * DPR) + 'px Helvetica, Arial, sans-serif';
     const famW = ctx.measureText(card.family).width;
     ctx.fillText(card.family, cx + cardW - famW - 8, cy + 8);
     ctx.drawImage(card.img, cx, cy + cardTitleH);
