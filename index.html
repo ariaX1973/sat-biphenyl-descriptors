@@ -275,6 +275,7 @@ footer { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border)
       <div class="compare-row" id="grid-bip-desc-row"><span class="label">Descripteurs</span></div>
       <div class="compare-row">
         <span class="label">Actions</span>
+        <button class="compare-chip" id="grid-bip-separate" aria-pressed="false" title="Pour chaque descripteur per-ring, créer un mini-graphe distinct par ring actif (sinon : moyenne des rings)">Séparer par cycle</button>
         <button class="compare-chip" id="grid-bip-preset">Preset HOMA/HOMA TOT/Q(G)</button>
         <button class="compare-chip" id="grid-bip-clear">Tout désélectionner</button>
       </div>
@@ -967,7 +968,7 @@ const panelState = {
   },
   biphenyl: {
     cmp:  { rings: new Set(['r1','r2']), descriptors: new Set(['HOMA']), normalize: true },
-    grid: { rings: new Set(['r1','r2']), descriptors: new Set(['HOMA','HOMA_TOT']) },
+    grid: { rings: new Set(['r1','r2']), descriptors: new Set(['HOMA','HOMA_TOT']), separateByCycle: false },
   },
 };
 const cmpCharts = {};   // 'sat' or 'biphenyl' → Chart
@@ -1198,24 +1199,43 @@ function gridRender(pageKey) {
   }
   const mols = pageKey === 'sat' ? SAT_MOLS : BIP_MOLS;
   const ringSet = pageKey === 'biphenyl' ? ps.rings : null;
-  activeKeys.forEach((descKey, idx) => {
+  const splitOn = pageKey === 'biphenyl' && ps.separateByCycle;
+  const ringLabels = { r1: 'Ring 1', r2: 'Ring 2' };
+  const ringColors = { r1: '#185FA5', r2: '#BA7517' };
+  // Build card specs : per-ring descriptors split when toggle active
+  const cardSpecs = [];
+  const sortedRings = pageKey === 'biphenyl' ? ['r1','r2'].filter(r => ringSet.has(r)) : [];
+  activeKeys.forEach((descKey) => {
     const d = DESCRIPTORS.find(x => x.key === descKey);
     if (!d) return;
+    if (splitOn && d.perRing) {
+      sortedRings.forEach(r => cardSpecs.push({ descKey, d, ring: r }));
+    } else {
+      cardSpecs.push({ descKey, d, ring: null });
+    }
+  });
+  cardSpecs.forEach((spec, idx) => {
+    const { descKey, d, ring } = spec;
     const card = document.createElement('div');
     card.className = 'grid-card';
-    const titleColor = cmpColor(idx);
-    const famSuffix = pageKey === 'biphenyl' && d.perRing ? ' · per-ring (avg)' : ' · ' + (d.perRing ? 'per-mol' : 'global');
+    const titleColor = ring ? ringColors[ring] : cmpColor(idx);
+    const famSuffix = pageKey === 'biphenyl' && d.perRing
+      ? (ring ? ` · ${ringLabels[ring]}` : ' · moy. rings actifs')
+      : ' · ' + (d.perRing ? 'per-mol' : 'global');
+    const splitSuffix = ring ? ` <span style="color:var(--muted);font-weight:400;font-size:0.85em">— ${ringLabels[ring]}</span>` : '';
     const canvasId = `grid-chart-${pageKey}-${idx}`;
     card.innerHTML = `
       <div class="grid-card-title">
-        <span style="color:${titleColor}">${d.label}</span>
+        <span style="color:${titleColor}">${d.label}${splitSuffix}</span>
         <span class="grid-card-family">${d.family}${famSuffix}</span>
       </div>
       <div class="grid-card-canvas-wrap"><canvas id="${canvasId}"></canvas></div>`;
     root.appendChild(card);
-    const raw = panelValuesAt(pageKey, descKey, ringSet);
+    const effectiveRingSet = ring ? new Set([ring]) : ringSet;
+    const raw = panelValuesAt(pageKey, descKey, effectiveRingSet);
     const ctx = document.getElementById(canvasId).getContext('2d');
-    gridCharts[pageKey + '-' + descKey] = new Chart(ctx, {
+    const chartKey = ring ? `${pageKey}-${descKey}__r_${ring}` : `${pageKey}-${descKey}`;
+    gridCharts[chartKey] = new Chart(ctx, {
       type: 'line',
       data: {
         labels: mols,
@@ -1262,14 +1282,25 @@ async function gridDownload(pageKey) {
   const titleH = F_TITLE + F_SUB * 2 + lineGap * 3 + Math.round(10 * DPR);
   const cardGap = Math.round(12 * DPR), cardTitleH = F_CARD_TITLE + Math.round(10 * DPR);
 
+  const ringLabels = { r1: 'Ring 1', r2: 'Ring 2' };
+  const ringColors = { r1: '#185FA5', r2: '#BA7517' };
+  const prefix = pageKey + '-';
   const cards = []; let idx = 0;
-  for (const descKey of ps.descriptors) {
-    const ch = gridCharts[pageKey + '-' + descKey];
-    if (!ch) { idx++; continue; }
+  for (const [chartKey, ch] of Object.entries(gridCharts)) {
+    if (!chartKey.startsWith(prefix) || !ch) continue;
+    const rest = chartKey.slice(prefix.length);
+    let descKey = rest, ring = null;
+    const ir = rest.indexOf('__r_');
+    if (ir >= 0) { descKey = rest.slice(0, ir); ring = rest.slice(ir + 4); }
     const d = DESCRIPTORS.find(x => x.key === descKey);
+    if (!d) continue;
     const img = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = ch.toBase64Image('image/png', 1); });
-    const famSuffix = pageKey === 'biphenyl' && d.perRing ? ' · per-ring (avg)' : ' · ' + (d.perRing ? 'per-mol' : 'global');
-    cards.push({ descKey, label: d.label, family: d.family + famSuffix, img, color: cmpColor(idx) });
+    const famSuffix = pageKey === 'biphenyl' && d.perRing
+      ? (ring ? ` · ${ringLabels[ring]}` : ' · moy. rings actifs')
+      : ' · ' + (d.perRing ? 'per-mol' : 'global');
+    const label = ring ? `${d.label} — ${ringLabels[ring]}` : d.label;
+    const color = ring ? ringColors[ring] : cmpColor(idx);
+    cards.push({ chartKey, label, family: d.family + famSuffix, img, color });
     idx++;
   }
   if (!cards.length) return;
@@ -1380,6 +1411,11 @@ document.getElementById('cmp-bip-clear').addEventListener('click', () => {
   cmpRender('biphenyl');
 });
 document.getElementById('cmp-bip-download').addEventListener('click', () => cmpDownload('biphenyl'));
+document.getElementById('grid-bip-separate').addEventListener('click', (e) => {
+  panelState.biphenyl.grid.separateByCycle = !panelState.biphenyl.grid.separateByCycle;
+  e.currentTarget.setAttribute('aria-pressed', panelState.biphenyl.grid.separateByCycle);
+  gridRender('biphenyl');
+});
 document.getElementById('grid-bip-preset').addEventListener('click', () => {
   panelState.biphenyl.grid.descriptors = new Set(['HOMA','HOMA_TOT','Q_G']);
   document.querySelectorAll('[data-grid-bip-desc]').forEach(b => b.setAttribute('aria-pressed', panelState.biphenyl.grid.descriptors.has(b.getAttribute('data-grid-bip-desc'))));
