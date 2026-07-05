@@ -83,6 +83,23 @@
     }
   });
 })();
+window.ACS_CREDIT = "ARIA NOROOZI — M1 INTERNSHIP 2026 — LABORATOIRE DE CHIMIE THÉORIQUE (LCT)";
+window.withAcsCredit = function(canvas){
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const pad = Math.round(8 * dpr);
+  const cH = Math.round(14 * dpr) + pad * 2;
+  const out = document.createElement('canvas');
+  out.width = canvas.width; out.height = canvas.height + cH;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(canvas, 0, 0);
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#6B6B6B';
+  ctx.font = Math.round(12 * dpr) + 'px Helvetica, Arial, sans-serif';
+  const tw = ctx.measureText(window.ACS_CREDIT).width;
+  ctx.fillText(window.ACS_CREDIT, (out.width - tw) / 2, canvas.height + pad);
+  return out;
+};
 </script>
 <style>
 :root {
@@ -376,6 +393,7 @@ footer { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border)
     HOMA: Krygowski R<sub>opt</sub>=1.3913 Å. LDM &amp; Q family: Pilmé &amp; Spezia (2026). S-hom: indice d'homogénéité électronique.
     Suffixe <em>(G)</em> = grandeur globale, <em>TOT</em> = total des deux cycles.
   </p>
+  <p style="text-align:center;font-size:0.75rem;letter-spacing:0.05em;color:var(--muted);padding:12px 0 4px;border-top:1px solid var(--border);margin-top:16px;font-family:Helvetica,Arial,sans-serif">ARIA NOROOZI — M1 INTERNSHIP 2026 — LABORATOIRE DE CHIMIE THÉORIQUE (LCT)</p>
 </footer>
 
 <script>
@@ -1027,7 +1045,7 @@ async function downloadDiagramFor(pageKey) {
   const slug = 'sat-biphenyl-descriptors_' + pageKey + '_' + new Date().toISOString().slice(0, 10);
   const link = document.createElement('a');
   link.download = slug + '.png';
-  link.href = out.toDataURL('image/png');
+  link.href = withAcsCredit(out).toDataURL('image/png');
   link.click();
 }
 document.getElementById('sat-btn-download').addEventListener('click', () => downloadDiagramFor('sat'));
@@ -1257,7 +1275,7 @@ async function cmpDownload(pageKey) {
   if (legendData) ctx.drawImage(legendData.img, margin, margin + titleH + chartImg.naturalHeight + legendGap);
   const link = document.createElement('a');
   link.download = `sat-biphenyl-descriptors_${pageKey}_compare_${new Date().toISOString().slice(0,10)}.png`;
-  link.href = out.toDataURL('image/png');
+  link.href = withAcsCredit(out).toDataURL('image/png');
   link.click();
 }
 
@@ -1416,7 +1434,7 @@ async function gridDownload(pageKey) {
   });
   const link = document.createElement('a');
   link.download = `sat-biphenyl-descriptors_${pageKey}_grid_${new Date().toISOString().slice(0,10)}.png`;
-  link.href = out.toDataURL('image/png');
+  link.href = withAcsCredit(out).toDataURL('image/png');
   link.click();
 }
 
